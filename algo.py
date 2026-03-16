@@ -1,15 +1,13 @@
 import torch,sys,os,gymnasium_sudoku,random,math,time
 import gymnasium as gym
 import numpy as np
+from tqdm import tqdm
 
 
 class MRV: 
     def __init__(self,state): 
         self.state = torch.as_tensor(state)
-        #self.idx = idx
-        #self.domain = torch.arange(1,10).repeat(self.idx.size(0),1)
-        #self.dic = torch.cat([self.idx,self.domain],-1) # -> column[1-2] = indice , column[3-11] = domain
-        
+
     def get_region(self,idx):
         row,col = idx
 
@@ -62,13 +60,12 @@ class MRV:
         
         n = self.dic[:,2:][tuple(sample_idx)].squeeze()
         n = n[n > 0]
-        sys.exit(n)
+    
         if len(n)>1:
-            sys.exit(("break",n))
-            #n = torch.as_tensor(random.choices(n.tolist()))
+            #sys.exit(("break",n))
+            n = torch.as_tensor(random.choices(n.tolist()))
         
         x = torch.cat([cell.squeeze(),n]).numpy()
-        
         return x
 
 
@@ -86,16 +83,17 @@ if __name__ == "__main__":
     env = env()
     state = torch.as_tensor(env.reset()[0])
     
-    for n in range(100):
-        idx = (state == 0).nonzero()
+    for n in tqdm(range(100)):
+        idx = (torch.as_tensor(state) == 0).nonzero()
         heuristic = MRV(state)
-        heuristic.sample_action(idx)
         
         state,reward,done,trunc,info = env.step(heuristic.sample_action(idx))
+        #print(torch.as_tensor(state) == torch.as_tensor(env.unwrapped.solution))
         env.render()
         time.sleep(1)
-        print("here",n)
+        
         if done:
             sys.exit("done")
             state = env.reset()
+        
         
