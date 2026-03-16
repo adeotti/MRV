@@ -1,14 +1,14 @@
-import torch,sys,os,gymnasium_sudoku,random,math
+import torch,sys,os,gymnasium_sudoku,random,math,time
 import gymnasium as gym
 import numpy as np
 
 
 class MRV: 
-    def __init__(self,state,idx): 
+    def __init__(self,state): 
         self.state = torch.as_tensor(state)
-        self.idx = idx
-        self.domain = torch.arange(1,10).repeat(self.idx.size(0),1)
-        self.dic = torch.cat([self.idx,self.domain],-1) # -> column[1-2] = indice , column[3-11] = domain
+        #self.idx = idx
+        #self.domain = torch.arange(1,10).repeat(self.idx.size(0),1)
+        #self.dic = torch.cat([self.idx,self.domain],-1) # -> column[1-2] = indice , column[3-11] = domain
         
     def get_region(self,idx):
         row,col = idx
@@ -26,18 +26,23 @@ class MRV:
         region = region[region!=0]
         return region
 
-    def update_domain(self):
+    def update_domain(self,idx):
+        self.idx = torch.as_tensor(idx)
+        self.domain = torch.arange(1,10).repeat(self.idx.size(0),1)
+        self.dic = torch.cat([self.idx,self.domain],-1) # -> column[1-2] = indice , column[3-11] = domain
+
         for tensor in self.dic:
             idx = tensor[:2]
             domain = tensor[2:]
-            region = self.get_region(idx)
 
+            region = self.get_region(idx)
             filler = torch.full((domain.size(0) - region.size(0),),0)
             region = torch.cat([region,filler])
-            domain_mask = (region == domain)
+        
+            domain_mask = torch.isin(domain,region)
             domain = torch.masked_fill(domain,domain_mask,-1)
 
-            tensor[2:] = domain 
+            tensor[2:] = domain
 
     def get_minimum_value(self):
         value_tensor = torch.empty(self.dic.size(0)).long()
@@ -47,16 +52,24 @@ class MRV:
             value_tensor[i] = value  
         return value_tensor.squeeze()
 
-    def sample_action(self): 
-        self.update_domain() 
+    def sample_action(self,idx): 
+        self.update_domain(idx) 
         vals = self.get_minimum_value()
         min_vals = vals.min()
         x = (vals == min_vals).nonzero()
         sample_idx = random.choices(x)
-        cell = self.dic[:,:2][sample_idx]
-        n = self.dic[:,2:][sample_idx]
+        cell = self.dic[:,:2][tuple(sample_idx)]
+        
+        n = self.dic[:,2:][tuple(sample_idx)].squeeze()
         n = n[n > 0]
-        return torch.cat([cell.squeeze(),n]).numpy(),sample_idx[0].item()
+        sys.exit(n)
+        if len(n)>1:
+            sys.exit(("break",n))
+            #n = torch.as_tensor(random.choices(n.tolist()))
+        
+        x = torch.cat([cell.squeeze(),n]).numpy()
+        
+        return x
 
 
 def env(horizon=None):
@@ -72,13 +85,17 @@ if __name__ == "__main__":
     """
     env = env()
     state = torch.as_tensor(env.reset()[0])
-    idx = (state == 0).nonzero()
-
-    for n in range(1000):
-        heuristic = MRV(state,torch.as_tensor(idx))
-        action,sample_idx = heuristic.sample_action()
-        state,reward,done,trunc,info = env.step(action)
+    
+    for n in range(100):
+        idx = (state == 0).nonzero()
+        heuristic = MRV(state)
+        heuristic.sample_action(idx)
+        
+        state,reward,done,trunc,info = env.step(heuristic.sample_action(idx))
         env.render()
+        time.sleep(1)
+        print("here",n)
         if done:
             sys.exit("done")
             state = env.reset()
+        
