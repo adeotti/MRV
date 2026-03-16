@@ -1,6 +1,4 @@
-import torch,sys,os,gymnasium_sudoku,mlflow,random,math
-import torch.nn as nn
-import torch.nn.functional as F
+import torch,sys,os,gymnasium_sudoku,random,math
 import gymnasium as gym
 import numpy as np
 
@@ -15,16 +13,17 @@ class MRV:
     def get_region(self,idx):
         row,col = idx
 
-        x_list = self.state[row].tolist()   ; x_list.pop(row)
-        y_list = self.state[:,col].tolist() ; y_list.pop(col)
-
+        x_list = self.state[row].tolist()   ; x_list.pop(col)
+        y_list = self.state[:,col].tolist() ; y_list.pop(row)
+        
         block_idx = (row // 3) * 3 + (col // 3)
         block = self.state.reshape(3,3,3,3).permute(0,2,1,3).reshape(9,9)[block_idx].tolist()
         block_row = row % 3 ; block_col = col % 3
         cell_idx = block_row * 3 + block_col
         block.pop(cell_idx)
         
-        region = torch.tensor([x_list + y_list + block]).unique().nonzero().squeeze()
+        region = torch.tensor([x_list + y_list + block]).unique()
+        region = region[region!=0]
         return region
 
     def update_domain(self):
@@ -65,9 +64,16 @@ def env(horizon=None):
     return x
 
 if __name__ == "__main__":
+    """
+    seed = 42
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+    random.seed(seed)
+    """
     env = env()
     state = torch.as_tensor(env.reset()[0])
     idx = (state == 0).nonzero()
+
     for n in range(1000):
         heuristic = MRV(state,torch.as_tensor(idx))
         action,sample_idx = heuristic.sample_action()
