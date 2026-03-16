@@ -59,3 +59,20 @@ class MRV:
         n = n[n > 0]
         return torch.cat([cell.squeeze(),n]).numpy(),sample_idx[0].item()
 
+
+def env(horizon=None):
+    x = gym.make("sudoku-v1",mode="easy",horizon=400,render_mode="human")
+    return x
+
+if __name__ == "__main__":
+    env = env()
+    state = torch.as_tensor(env.reset()[0])
+    idx = (state == 0).nonzero()
+    for n in range(1000):
+        heuristic = MRV(state,torch.as_tensor(idx))
+        action,sample_idx = heuristic.sample_action()
+        state,reward,done,trunc,info = env.step(action)
+        env.render()
+        if done:
+            sys.exit("done")
+            state = env.reset()
