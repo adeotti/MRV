@@ -96,7 +96,7 @@ if __name__ == "__main__":
         idx = (torch.as_tensor(state) == 0).nonzero()
         heuristic = MRV(state)
         
-        state,reward,done,trunc,info = env.step(heuristic.sample_action(idx))
+        state,_,_,_,_ = env.step(heuristic.sample_action(idx))
         env.render()
         time.sleep(0.1)
         
