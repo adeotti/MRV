@@ -69,7 +69,7 @@ class MRV:
 
         action = torch.cat([cell.squeeze(),cell_value]).numpy()
         
-        if self.dic.size(0) == 1: # handling last cell remaining
+        if self.dic.size(0) == 1: # handling last remaining cell 
             dic = self.dic.squeeze()
             cell = dic[:2]
             domain = dic[2:]
@@ -83,7 +83,7 @@ def env(horizon=None):
     return x
 
 if __name__ == "__main__":
-    """
+    """ for testing
     seed = 42
     torch.manual_seed(seed)
     np.random.seed(seed)
@@ -93,10 +93,10 @@ if __name__ == "__main__":
     state = torch.as_tensor(env.reset()[0])
     
     for n in tqdm(range(int(1e3))):
-        idx = (torch.as_tensor(state) == 0).nonzero()
+        idx = (torch.as_tensor(state) == 0).nonzero() # idx lenght should decrease after each step under optimal condition
         heuristic = MRV(state)
         
-        state,_,_,_,_ = env.step(heuristic.sample_action(idx))
+        state,_,done,_,_ = env.step(heuristic.sample_action(idx))
         env.render()
         time.sleep(0.1)
         
