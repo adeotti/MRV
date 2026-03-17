@@ -62,10 +62,17 @@ class MRV:
         n = n[n > 0]
     
         if len(n)>1:
-            #sys.exit(("break",n))
             n = torch.as_tensor(random.choices(n.tolist()))
-        
+
         x = torch.cat([cell.squeeze(),n]).numpy()
+        
+        if self.dic.size(0) == 1: # last cell remaining
+            dic = self.dic.squeeze()
+            cell = dic[:2]
+            domain = dic[2:]
+            domain = domain[domain > 0]
+            x = torch.cat([cell,domain]).numpy()
+
         return x
 
 
@@ -88,12 +95,12 @@ if __name__ == "__main__":
         heuristic = MRV(state)
         
         state,reward,done,trunc,info = env.step(heuristic.sample_action(idx))
-        #print(torch.as_tensor(state) == torch.as_tensor(env.unwrapped.solution))
         env.render()
-        time.sleep(1)
+        time.sleep(0.1)
         
         if done:
-            sys.exit("done")
-            state = env.reset()
+            _done = torch.as_tensor(state) == torch.as_tensor(env.unwrapped.solution)
+            print("Done == ",torch.all(_done).item())
+            state = torch.as_tensor(env.reset()[0])
         
         
