@@ -14,7 +14,7 @@ class MRV:
         x_list = self.state[row].tolist()   
         x_list.pop(col)
 
-        y_list = self.state[:,col].tolist()
+        y_list = self.state[:,col].tolist() 
         y_list.pop(row)
         
         block_idx = (row // 3) * 3 + (col // 3)
@@ -61,13 +61,13 @@ class MRV:
         sample_idx = random.choices(x)
         cell = self.dic[:,:2][tuple(sample_idx)]
         
-        n = self.dic[:,2:][tuple(sample_idx)].squeeze()
-        n = n[n > 0]
+        cell_value = self.dic[:,2:][tuple(sample_idx)].squeeze()
+        cell_value = cell_value[cell_value > 0]
     
-        if len(n)>1:
-            n = torch.as_tensor(random.choices(n.tolist()))
+        if len(cell_value) > 1:
+            cell_value = torch.as_tensor(random.choices(cell_value.tolist()))
 
-        action = torch.cat([cell.squeeze(),n]).numpy()
+        action = torch.cat([cell.squeeze(),cell_value]).numpy()
         
         if self.dic.size(0) == 1: # handling last cell remaining
             dic = self.dic.squeeze()
@@ -79,7 +79,7 @@ class MRV:
         return action
 
 def env(horizon=None):
-    x = gym.make("sudoku-v1",mode="biased",horizon=100,render_mode="human")
+    x = gym.make("sudoku-v1",mode="easy",horizon=100,render_mode="human")
     return x
 
 if __name__ == "__main__":
