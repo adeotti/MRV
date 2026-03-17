@@ -10,3 +10,7 @@ numpy==2.2.6
 tqdm==4.67.3
 ```
 
+![Test](./game_gif.gif)
+
+
+
