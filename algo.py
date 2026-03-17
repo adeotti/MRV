@@ -1,4 +1,4 @@
-import torch,sys,os,gymnasium_sudoku,random,math,time
+import torch,sys,gymnasium_sudoku,random,time
 import gymnasium as gym
 import numpy as np
 from tqdm import tqdm
@@ -11,8 +11,11 @@ class MRV:
     def get_region(self,idx):
         row,col = idx
 
-        x_list = self.state[row].tolist()   ; x_list.pop(col)
-        y_list = self.state[:,col].tolist() ; y_list.pop(row)
+        x_list = self.state[row].tolist()   
+        x_list.pop(col)
+
+        y_list = self.state[:,col].tolist()
+        y_list.pop(row)
         
         block_idx = (row // 3) * 3 + (col // 3)
         block = self.state.reshape(3,3,3,3).permute(0,2,1,3).reshape(9,9)[block_idx].tolist()
@@ -64,20 +67,19 @@ class MRV:
         if len(n)>1:
             n = torch.as_tensor(random.choices(n.tolist()))
 
-        x = torch.cat([cell.squeeze(),n]).numpy()
+        action = torch.cat([cell.squeeze(),n]).numpy()
         
-        if self.dic.size(0) == 1: # last cell remaining
+        if self.dic.size(0) == 1: # handling last cell remaining
             dic = self.dic.squeeze()
             cell = dic[:2]
             domain = dic[2:]
             domain = domain[domain > 0]
-            x = torch.cat([cell,domain]).numpy()
+            action = torch.cat([cell,domain]).numpy()
 
-        return x
-
+        return action
 
 def env(horizon=None):
-    x = gym.make("sudoku-v1",mode="easy",horizon=400,render_mode="human")
+    x = gym.make("sudoku-v1",mode="biased",horizon=100,render_mode="human")
     return x
 
 if __name__ == "__main__":
@@ -90,7 +92,7 @@ if __name__ == "__main__":
     env = env()
     state = torch.as_tensor(env.reset()[0])
     
-    for n in tqdm(range(100)):
+    for n in tqdm(range(int(1e3))):
         idx = (torch.as_tensor(state) == 0).nonzero()
         heuristic = MRV(state)
         
